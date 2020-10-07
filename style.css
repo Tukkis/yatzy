@@ -34,16 +34,18 @@ body{
 
 #score-sheet>div{
     display: grid;
-    grid-template-columns: 2fr 1fr 1fr;
+    grid-auto-flow: column;
+    grid-auto-columns: 1fr;
     border-top: 1px solid black;
     border-left: 1px solid black;
 }
 
 #score-sheet>div>p{
     margin: auto 0 auto 0;
+    grid-column: 1 / span 2;
 }
 
-#score-sheet>div>button{
+button{
     color: white;
     background: none;
 	padding: 0;
@@ -64,10 +66,14 @@ body{
 
 .bonus, .sum, .inter-sum{
     font-weight: bold;
+    color: black;
+    border-top: 1px solid black;
+    margin-top: 0 !important;
 }
 
-#sum, #inter-sum{
-    border-top: 2px solid black !important;
+
+.locked {
+    color: black !important;
 }
 
 #play-area-container{
@@ -82,7 +88,9 @@ body{
 }
 
 #start-selection{
-    
+    display: grid;
+    align-content: center;
+    margin-top: 50px;
 }
 
 #dice{
@@ -90,6 +98,7 @@ body{
     grid-template-columns: repeat(5, 1fr);
     justify-items: center;
     width: 600px;
+    margin-top: 50px;
 }
 
 .die{
@@ -149,7 +158,14 @@ body{
     margin: 50px 50px 0 50px;
 }
 
-#controls>button{
+#controls>button, #start-selection>button{
     margin: auto;
-    width: 50px;
+    width: 100px;
+    color: black;
+    border: 1px solid black;
+    background-color: #fff;
+}
+
+#controls>button:disabled{
+    background-color: gray;
 }

@@ -1,11 +1,15 @@
 const scoreSheet = document.getElementById('score-sheet');
 const rollButton = document.getElementById('roll');
 const startButton = document.getElementById('start');
+const stopButton = document.getElementById('stop');
 const startSelection = document.getElementById('start-selection');
 const dice = [];
 let chosenDice = [];
+let tableArr = [];
+let sheetArr = [];
 const children = scoreSheet.childNodes;
 let players = 2;
+let player = 0;
 let rollsLeft = 0;
 
 for(let i = 1; i <= 5; i++){
@@ -15,34 +19,52 @@ for(let i = 1; i <= 5; i++){
 }
 
 
-[].forEach.call(children, function(child,index){
-    if(index%2===1){
-        for(let i = 0; i < players; i++){
-            if(index === 1){
-                let nameField = document.createElement('input');
-                nameField.setAttribute('id', `${child.id}${i}`);
-                nameField.setAttribute('class', child.id);
-                nameField.setAttribute('placeholder', 'Player');
-                child.appendChild(nameField);
-            }  else {
-                let button = document.createElement('button');
-                button.setAttribute('id', `${child.id}${i}`);
-                button.setAttribute('class', child.id);
-                button.textContent = 'test';
-                child.appendChild(button);
-            }
+function generateTable(){
+    for(let i = 0; i < players; i++){
+        tableArr.push([]);
+        sheetArr.push([]);
+        for(let j = 0; j < 15; j++){
+            tableArr[i].push('-');
         }
     }
-});
+    [].forEach.call(children, function(child,index){
+        if(index%2===1){
+            for(let i = 0; i < players; i++){
+                if(index === 1){
+                    let nameField = document.createElement('input');
+                    nameField.setAttribute('id', `${child.id}${i}`);
+                    nameField.setAttribute('class', child.id);
+                    nameField.setAttribute('placeholder', 'Player');
+                    child.appendChild(nameField);
+                }  else {
+                    let button = document.createElement('button');
+                    button.setAttribute('id', `${child.id}${i}`);
+                    button.setAttribute('class', child.id);
+                    button.textContent = '-';
+                    button.disabled = true;
+                    child.appendChild(button);
+                    button.addEventListener('click', () => chooseField(button))
+                    sheetArr[i].push(button);
+                }
+            }
+        }
+    });
+    for(let i = 0; i < players; i++){
+        sheetArr[i].splice(6,2);
+        sheetArr[i].pop();
+    }
+}
 
 function startGame(){
+    generateTable();
     chosenDice = [];
+    rollsLeft = 3;
     dice.forEach(function(die){
         die.classList.add('die', 'first-face');
     })
     rollDice(dice);
-    startButton.disabled = true;
     rollButton.disabled = false;
+    startSelection.style.display = "none";
 }
 
 function toggleChosen(die){
@@ -57,7 +79,6 @@ function toggleChosen(die){
 
 function rollDie(die){
     let num = Math.ceil(Math.random() * 6);
-    console.log(num);
     switch (num) {
         case 1:
             die.classList.remove(die.classList[1]);
@@ -143,13 +164,77 @@ function rollDice(diceToRoll){
             rollDie(die);
         })
         chosenDice = [];
+        rollsLeft--;
+    }
+    if(rollsLeft <= 0){
+        checker(player);
     }
 }
 
 function checker(player){
-    diceToCheck = dice.map(die => die.dataset.key);
-    console.log(diceToCheck);
+    let diceToCheck = dice.reduce((diceArr, die) => {
+        diceArr[die.dataset.key-1]++;
+        return diceArr;
+    }, [0, 0, 0, 0, 0, 0]);
+    let copyArr = tableArr[player].map(node => node);
+    let sum = (diceToCheck[5]*6)+(diceToCheck[4]*5)+(diceToCheck[3]*4)+(diceToCheck[2]*3)+(diceToCheck[1]*2)+(diceToCheck[0]);
+    let pairs = diceToCheck.reduce((a,b)=>{return b === 2 ? a + 1 : a}, 0)
+    let straight = diceToCheck.reduce((a,b,i)=> {return b === 1 && i < 5 ? a + 1 : b === 1 ? a + 2 : a},0);
+    copyArr[0] = diceToCheck[0];
+    copyArr[1] = diceToCheck[1]*2;
+    copyArr[2] = diceToCheck[2]*3;
+    copyArr[3] = diceToCheck[3]*4;
+    copyArr[4] = diceToCheck[4]*5;
+    copyArr[5] = diceToCheck[5]*6;
+    copyArr[6] = diceToCheck.reduce((a,b,i) => {
+        return b === 2 ? a = b * (i + 1) : a;
+    }, 0);
+    copyArr[7] = diceToCheck.reduce((a,b,i) => {
+        return b === 2 && pairs === 2 ?  a + b * (i + 1) : a;
+    },0);
+    copyArr[8] = diceToCheck.indexOf(3) >= 0 ? (diceToCheck.indexOf(3) + 1) * 3 : 0;
+    copyArr[9] = diceToCheck.indexOf(4) >= 0 ? (diceToCheck.indexOf(4) + 1) * 3 : 0;
+    copyArr[10] = straight === 5 ? 15 : 0;
+    copyArr[11] = straight === 6 && diceToCheck[0] === 0 ? 20 : 0; 
+    copyArr[12] = diceToCheck.indexOf(3) >= 0 && diceToCheck.indexOf(2) >= 0 ? diceToCheck.reduce((a,b,i) => {return a + b * (i + 1)},0) : 0;
+    copyArr[13] = sum;
+    copyArr[14] = diceToCheck.indexOf(5) >= 0 ? 50 : 0;
+    
+    sheetArr[player].forEach(function(btn,i){
+        btn.disabled = false;
+        btn.innerHTML=`${copyArr[i]}`;
+    })
+    console.log('checked')
+    rollButton.disabled = true;
+    stopButton.disabled = true;
+}
+
+function chooseField(buttonPressed){
+    let iOf = sheetArr[player].reduce((a,b,i) => {return b.id === buttonPressed.id ? a = i : a},-1)
+    if ((!buttonPressed.classList.contains('locked') && rollsLeft === 0) && iOf > -1){
+        console.log(buttonPressed);
+        buttonPressed.classList.add('locked');
+        tableArr[player][iOf] = buttonPressed.innerHTML;
+        sheetArr[player].forEach(function(btn,i){
+            btn.innerHTML=`${tableArr[player][i]}`;
+        })
+        let interSum = tableArr[player].slice(0,6).reduce((a,b) => {return b === '-' ? a : a + Number(b)},0);
+        document.getElementById(`inter-sum${player}`).innerHTML = interSum;
+        document.getElementById(`bonus${player}`).innerHTML = interSum >= 63 ? 50 : 0;
+        document.getElementById(`sum${player}`).innerHTML = tableArr[player].reduce((a,b) => {return b === '-' ? a : a + Number(b)},0);
+        player === players - 1 ? player = 0 : player++;
+        rollButton.disabled=false;
+        stopButton.disabled=false;
+        rollsLeft = 3;
+        rollDice(dice);
+    }
 }
 
 rollButton.addEventListener('click', () => rollDice(chosenDice));
 startButton.addEventListener('click' , () => startGame());
+stopButton.addEventListener('click', function(){rollsLeft = 0; checker(player);})
+document.getElementById('players-one').addEventListener('click', () => players = 1);
+document.getElementById('players-two').addEventListener('click', () => players = 2);
+document.getElementById('players-three').addEventListener('click', () => players = 3);
+document.getElementById('players-four').addEventListener('click', () => players = 4);
+
