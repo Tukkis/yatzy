@@ -1,3 +1,5 @@
+// Init variables and get HTML elements
+
 const scoreSheet = document.getElementById('score-sheet');
 const rollButton = document.getElementById('roll');
 const startButton = document.getElementById('start');
@@ -12,13 +14,15 @@ let players = 2;
 let player = 0;
 let rollsLeft = 0;
 
+//Push die elements into dice array
 for(let i = 1; i <= 5; i++){
     let currentDie = document.getElementById(`die${i}`);
     dice.push(currentDie);
+    //Give dice event listeners to toggle chosen status
     currentDie.addEventListener('click', () => toggleChosen(currentDie));
 }
 
-
+//Generate scoresheet
 function generateTable(){
     for(let i = 0; i < players; i++){
         tableArr.push([]);
@@ -27,9 +31,12 @@ function generateTable(){
             tableArr[i].push('-');
         }
     }
+    //Loop through scoresheet from top to bottom 
     [].forEach.call(children, function(child,index){
+        //Skip text elements
         if(index%2===1){
             for(let i = 0; i < players; i++){
+                //If in the top row create name field
                 if(index === 1){
                     let nameField = document.createElement('input');
                     nameField.setAttribute('id', `${child.id}${i}`);
@@ -37,6 +44,7 @@ function generateTable(){
                     nameField.setAttribute('placeholder', 'Player');
                     child.appendChild(nameField);
                 }  else {
+                    //else create field for the result corresponding to current row
                     let button = document.createElement('button');
                     button.setAttribute('id', `${child.id}${i}`);
                     button.setAttribute('class', child.id);
@@ -49,12 +57,14 @@ function generateTable(){
             }
         }
     });
+    //Remove midsum, bonus and sum from scoresheet array
     for(let i = 0; i < players; i++){
         sheetArr[i].splice(6,2);
         sheetArr[i].pop();
     }
 }
 
+//Init table
 function startGame(){
     generateTable();
     chosenDice = [];
@@ -67,6 +77,7 @@ function startGame(){
     startSelection.style.display = "none";
 }
 
+//Func to toggle dice on click
 function toggleChosen(die){
     if(chosenDice.includes(die)){
         die.style.backgroundColor = "white";
@@ -77,6 +88,7 @@ function toggleChosen(die){
     }
 }
 
+//Rolls die and modifies elements correspondingly
 function rollDie(die){
     let num = Math.ceil(Math.random() * 6);
     switch (num) {
@@ -158,6 +170,7 @@ function rollDie(die){
     die.style.backgroundColor = "white";
 }
 
+//Roll dice and decrement rolls left
 function rollDice(diceToRoll){
     if(diceToRoll){
         diceToRoll.forEach(function(die){
@@ -166,11 +179,13 @@ function rollDice(diceToRoll){
         chosenDice = [];
         rollsLeft--;
     }
+    //If player is out of rolls calculate scoresheet
     if(rollsLeft <= 0){
         checker(player);
     }
 }
 
+//Func that calculates all possible scores for the player to choose
 function checker(player){
     let diceToCheck = dice.reduce((diceArr, die) => {
         diceArr[die.dataset.key-1]++;
@@ -204,24 +219,27 @@ function checker(player){
         btn.disabled = false;
         btn.innerHTML=`${copyArr[i]}`;
     })
-    console.log('checked')
     rollButton.disabled = true;
     stopButton.disabled = true;
 }
 
+//Function that runs when player chooses to score a field
 function chooseField(buttonPressed){
+    //Get index of button pressed
     let iOf = sheetArr[player].reduce((a,b,i) => {return b.id === buttonPressed.id ? a = i : a},-1)
+    //Lock the chosen field
     if ((!buttonPressed.classList.contains('locked') && rollsLeft === 0) && iOf > -1){
-        console.log(buttonPressed);
         buttonPressed.classList.add('locked');
         tableArr[player][iOf] = buttonPressed.innerHTML;
         sheetArr[player].forEach(function(btn,i){
             btn.innerHTML=`${tableArr[player][i]}`;
         })
+        //Update intersum, bonus and sum
         let interSum = tableArr[player].slice(0,6).reduce((a,b) => {return b === '-' ? a : a + Number(b)},0);
         document.getElementById(`inter-sum${player}`).innerHTML = interSum;
         document.getElementById(`bonus${player}`).innerHTML = interSum >= 63 ? 50 : 0;
         document.getElementById(`sum${player}`).innerHTML = tableArr[player].reduce((a,b) => {return b === '-' ? a : a + Number(b)},0);
+        //Move to next player 
         player === players - 1 ? player = 0 : player++;
         rollButton.disabled=false;
         stopButton.disabled=false;
@@ -230,6 +248,7 @@ function chooseField(buttonPressed){
     }
 }
 
+//Add event listeners to static buttons
 rollButton.addEventListener('click', () => rollDice(chosenDice));
 startButton.addEventListener('click' , () => startGame());
 stopButton.addEventListener('click', function(){rollsLeft = 0; checker(player);})
